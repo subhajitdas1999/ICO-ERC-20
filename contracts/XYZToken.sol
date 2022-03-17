@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: MIT
 
-pragma solidity >=0.7.1 <0.9.0;
+pragma solidity >=0.8.0;
 
 contract XYZToken{
-    string public name;
-    string public symbol;
+    string private name;
+    string private symbol;
 
     uint public totalSupply;
     
@@ -14,17 +14,20 @@ contract XYZToken{
     event Transfer(address indexed from,address indexed to,uint amount);
     event Approval(address indexed from, address indexed to,uint value);
 
+
     constructor(string memory _name,string memory _symbol,uint _initialSupply){
         name=_name;
         symbol=_symbol;
         _mint(msg.sender,_initialSupply);
         
     }
+    
+
     function _mint(address _sender,uint _initialSupply) internal {
         uint _initialSupplyWithDecimal = (_initialSupply * (10**(decimals())));
         totalSupply += _initialSupplyWithDecimal;
         balanceOf[_sender] += _initialSupplyWithDecimal;
-        emit Transfer(address(0),_sender,_initialSupply);
+        emit Transfer(address(0),_sender,_initialSupplyWithDecimal);
     }
 
     function decimals() public pure returns(uint8){
@@ -33,7 +36,7 @@ contract XYZToken{
 
     function _transfer(address _from,address _to,uint _value) internal {
         require( _from != address(0) || _to != address(0), "Send to 0 address");
-        require(balanceOf[_from] >= _value , "Account does not have enough balance");
+        require(balanceOf[_from] >= _value , "Account does not have enough Token");
 
         balanceOf[_from] -= _value;
         balanceOf[_to] += _value;
@@ -58,7 +61,8 @@ contract XYZToken{
         _transfer(msg.sender,_to,_value);   
         emit Approval(_from,msg.sender,allowance[_from][msg.sender]);
         return true;
-               
+       
+        
     }
 
     

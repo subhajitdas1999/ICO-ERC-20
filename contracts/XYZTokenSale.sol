@@ -1,6 +1,6 @@
 //SPDX-License-Identifier: MIT
 
-pragma solidity >=0.7.1 <0.9.0;
+pragma solidity >=0.8.0;
 
 import "./XYZToken.sol";
 
@@ -21,15 +21,16 @@ contract XYZTokenSale is Owner{
     enum ICOState {started,preSale,seedSale,finalSale}
 
     ICOState public state = ICOState.started;
-    uint public rate; //TKN bits per Ether (considering per ether for simple calculation)
+    uint private rate; //TKN bits per wei. representing with the help of rateDenominator
+    uint private rateDenominator;
     XYZToken token;
     uint priceOfOneTKNBits;
     uint tokenAvailableForSale;
-    uint tokenLeftFromPreAndSeedSale; 
+    // uint tokenLeftFromPreAndSeedSale; 
 
     //30 million for pre sale
     // 50 million for seed sale
-    // 20 million for final sale + token left for pre sale and seed sale 
+    // 20 million for final sale 
 
     constructor(XYZToken _token){
         token = _token;
@@ -54,61 +55,60 @@ contract XYZTokenSale is Owner{
     }
 
     function changeICOState(uint _state) public onlyOwner{
+        
         if(_state == uint(ICOState.preSale)){
             require(state == ICOState.started,"The ICO is in wrong state .Cannot proceed to pre sale state");
             // PRICE = 0.001 USD 
             // 1Ether = 3000 USD
             //rate is 25 x 10^(-4) TKN bits per wei
-            // which is = 25 x 10^(14) TKN bits per ether
             state = ICOState.preSale;
-            uint _rateForPreSale = 25 * (10**14) ; 
-            _setRate(_rateForPreSale);
+            rate = 25;
+            rateDenominator = 10**4;
+            priceOfOneTKNBits = 400; //minimum user have to pay 400 wei
             tokenAvailableForSale = 30000000 * (10**(token.decimals()));
             
         }
         else if(_state == uint(ICOState.seedSale)){
             require( state == ICOState.preSale,"The ICO is in wrong state .Cannot proceed to seed sale state");
             // PRICE = 0.2 USD
-            //rate is 15 X 10^12 TKN bits per Ether
+            //rate is 15 X 10^(-6) TKN bits per wei
             state = ICOState.seedSale;           
-            uint _rateForSeedSale = 15 * (10**12);
-            _setRate(_rateForSeedSale);
-            tokenLeftFromPreAndSeedSale += tokenAvailableForSale;
+            rate = 15;
+            rateDenominator = 10**6;
+            priceOfOneTKNBits = 67000; //minimum user have to pay 67000 wei
             tokenAvailableForSale = 50000000 * (10**(token.decimals()));
 
         }
         
     }
 
-    function setFinalState(uint _rateForFinalSale) public onlyOwner{
+    function setFinalState(uint _rate ,uint _rateDenominator, uint _priceOfOneTKNBits) public onlyOwner{
         require( state == ICOState.seedSale,"complete the seed sale stage first");
-        _setRate(_rateForFinalSale);
+    
         // changeICOState(uint(ICOState.finalSale)); //call to change to final state
         state = ICOState.finalSale;
-        tokenLeftFromPreAndSeedSale += tokenAvailableForSale;
-        tokenAvailableForSale = (20000000 * (10**(token.decimals())) + tokenLeftFromPreAndSeedSale);
-        tokenLeftFromPreAndSeedSale = 0;
+        rate = _rate;
+        rateDenominator = _rateDenominator;
+        priceOfOneTKNBits = _priceOfOneTKNBits; //minimum user have to pay in wei
+        tokenAvailableForSale = 20000000 * (10**(token.decimals()));
             
         
     }
 
     function _validatePurchase (uint _weiAmount, uint _tokenAvailableForSale) internal view returns(uint){
+        require(_tokenAvailableForSale!=0,"No tokens left for this round. Wait for next round");
         require(_weiAmount >= priceOfOneTKNBits,"Please provide more ether.");
         uint _tokenBitsAmount = _getTokenAmount(_weiAmount);
-        require(_tokenAvailableForSale>= _tokenBitsAmount,"Sorry Token is not available");
+        require(_tokenAvailableForSale>= _tokenBitsAmount,"Sorry Token is not available.Reduce token amount");
         return _tokenBitsAmount;
     }
 
     function _getTokenAmount(uint _weiAmount) internal view returns(uint){
-        // rate is in TKN bits per ether to convert it in per wei , we dividing it by 1 ether = 10^18 wei
-        return (_weiAmount * rate) / 1 ether ;
+        // rate is in TKN bits per wei .
+        return (_weiAmount * rate) / rateDenominator ;
     }
 
 
-    function _setRate(uint _rate) internal{
-        rate = _rate ;
-        priceOfOneTKNBits = 1 ether / rate; 
-    }
 
 
     function _forwardFundsToOwner() internal {
@@ -119,7 +119,6 @@ contract XYZTokenSale is Owner{
     function endCrowdSale() public onlyOwner{
         require(state == ICOState.finalSale,"Crowd sale is not in final stage");
         token.transfer(_owner,tokenAvailableForSale);
-        // tokenAvailableForSale=0;
         selfdestruct(_owner);
     }
 
