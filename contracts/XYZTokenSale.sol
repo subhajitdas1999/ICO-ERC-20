@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.0;
 
-import "./XYZToken.sol";
+import "./IERC20.sol";
 
 contract Owner{
     address payable internal _owner;
@@ -23,7 +23,7 @@ contract XYZTokenSale is Owner{
     ICOState public state = ICOState.started;
     uint private rate; //TKN bits per wei. representing with the help of rateDenominator
     uint private rateDenominator;
-    XYZToken token;
+    IERC20 token;
     uint priceOfOneTKNBits;
     uint tokenAvailableForSale;
     // uint tokenLeftFromPreAndSeedSale; 
@@ -32,7 +32,7 @@ contract XYZTokenSale is Owner{
     // 50 million for seed sale
     // 20 million for final sale 
 
-    constructor(XYZToken _token){
+    constructor(IERC20 _token){
         token = _token;
     }
 
@@ -119,7 +119,8 @@ contract XYZTokenSale is Owner{
     function endCrowdSale() public onlyOwner{
         require(state == ICOState.finalSale,"Crowd sale is not in final stage");
         token.transfer(_owner,tokenAvailableForSale);
-        selfdestruct(_owner);
+        tokenAvailableForSale = 0;
+
     }
 
    

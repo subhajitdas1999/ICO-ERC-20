@@ -1,18 +1,18 @@
 //SPDX-License-Identifier: MIT
 
-pragma solidity >=0.8.0;
+pragma solidity ^0.8.0;
 
-contract XYZToken{
+import "./IERC20.sol";
+
+contract XYZToken is IERC20{
     string private name;
     string private symbol;
 
     uint public totalSupply;
     
     mapping (address => uint) public balanceOf;
-    mapping (address => mapping(address => uint)) public allowance;
+    mapping (address => mapping(address => uint)) public  allowance;
 
-    event Transfer(address indexed from,address indexed to,uint amount);
-    event Approval(address indexed from, address indexed to,uint value);
 
 
     constructor(string memory _name,string memory _symbol,uint _initialSupply){
@@ -30,7 +30,7 @@ contract XYZToken{
         emit Transfer(address(0),_sender,_initialSupplyWithDecimal);
     }
 
-    function decimals() public pure returns(uint8){
+    function decimals() public pure returns(uint){
         return 9;
     }
 
@@ -43,7 +43,7 @@ contract XYZToken{
         emit Transfer(_from,_to,_value);
     }
 
-    function approve(address _to,uint _value) public{
+    function approve(address _to,uint _value)  public  {
         require(msg.sender != _to,"Owner and benificiary should be different");        
         allowance[msg.sender][_to] += _value;
         emit Approval(msg.sender,_to,allowance[msg.sender][_to]);
@@ -54,7 +54,7 @@ contract XYZToken{
         return true;
     }
 
-    function transferFrom(address _from, address _to,uint _value) public returns(bool success){
+    function transferFrom(address _from, address _to,uint _value) public  returns(bool success){
         require(allowance[_from][msg.sender] >= _value ,"You Allowence is less");
 
         allowance[_from][msg.sender] -= _value ;
