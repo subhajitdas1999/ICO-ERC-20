@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./XYZToken.sol";
+import "./IERC20.sol";
 
 
 /**
